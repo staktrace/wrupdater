@@ -37,13 +37,10 @@ set -o pipefail
 #    HG_REV -> set to a hg revision in m-c or autoland that you want to use as
 #              the base. Defaults to central if not set, or autoland if there
 #              is already an update inflight on autoland.
-#    TMPDIR -> set to a temporary directory. Some temp working files are created
-#              into this dir. Defaults to $HOME/tmp
 
 # These should definitely be set
 MOZILLA_SRC=${MOZILLA_SRC:-$HOME/zspace/test-mozilla-wr}
 WEBRENDER_SRC=${WEBRENDER_SRC:-$HOME/zspace/test-webrender}
-LAST_WR_TESTED=$(cat $HOME/zspace/last_wr_tested || echo "")
 
 # For most general usefulness you will want to override these:
 PUSH_TO_TRY=${PUSH_TO_TRY:-1}
@@ -51,10 +48,10 @@ PUSH_TO_TRY=${PUSH_TO_TRY:-1}
 # These are optional but handy
 HG_REV=${HG_REV:-0}
 WR_CSET=${WR_CSET:-master}
-TMPDIR=${TMPDIR:-$HOME/tmp}
 EXTRA_CRATES=${EXTRA_CRATES:-}
 BUGNUMBER=${BUGNUMBER:-0}
 
+TMPDIR=$HOME/.wrupdater/tmp
 mkdir -p $TMPDIR || true
 
 # Useful for cron
@@ -78,11 +75,12 @@ popd
 
 if [[ "$WR_CSET" == "master" && "$HG_REV" == "0" ]]; then
     # default configuration, check/update last_wr_tested
+    LAST_WR_TESTED=$(cat $HOME/.wrupdater/last_wr_tested || echo "")
     if [ "$CSET" == "$LAST_WR_TESTED" ]; then
         echo "No new WR revisions, aborting..."
         exit 0
     fi
-    echo "$CSET" > $HOME/zspace/last_wr_tested
+    echo "$CSET" > $HOME/.wrupdater/last_wr_tested
 fi
 
 # Delete generated patches from the last time this ran. This may emit a
