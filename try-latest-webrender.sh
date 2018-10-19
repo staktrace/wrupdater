@@ -81,10 +81,10 @@ if [ "$HG_REV" == "0" ]; then
     if [ $INFLIGHT -ne 0 ]; then
         # There's an update inflight on autoland, so use that as the base
         echo "Found update already inflight on autoland, using autoland base..."
-        HG_REV=$(hg id -r autoland)
+        HG_REV=$(hg id -i -r autoland)
     else
         # Otherwise use central
-        HG_REV=$(hg id -r central)
+        HG_REV=$(hg id -i -r central)
     fi
 fi
 
