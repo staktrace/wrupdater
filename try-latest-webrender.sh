@@ -50,6 +50,7 @@ HG_REV=${HG_REV:-0}
 WR_CSET=${WR_CSET:-master}
 EXTRA_CRATES=${EXTRA_CRATES:-}
 BUGNUMBER=${BUGNUMBER:-0}
+CRON=${CRON:-0}
 
 # Internal variables, don't fiddle with these
 MYSELF=$(readlink -f $0)
@@ -70,6 +71,21 @@ if [ "$APPLIED" -ne 0 ]; then
     exit 1
 fi
 
+hg pull https://hg.mozilla.org/mozilla-central/
+hg pull https://hg.mozilla.org/integration/autoland/
+
+if [ "$HG_REV" == "0" ]; then
+    INFLIGHT=$(hg diff -r central -r autoland gfx/webrender_bindings/revision.txt | wc -l)
+    if [ $INFLIGHT -ne 0 ]; then
+        # There's an update inflight on autoland, so use that as the base
+        echo "Found update already inflight on autoland, using autoland base..."
+        HG_REV=$(hg id -r autoland)
+    else
+        # Otherwise use central
+        HG_REV=$(hg id -r central)
+    fi
+fi
+
 # Update webrender repo to desired copy rev
 pushd $WEBRENDER_SRC
 git checkout master
@@ -78,14 +94,13 @@ git checkout $WR_CSET
 CSET=$(git log -1 | grep commit | head -n 1)
 popd
 
-if [[ "$WR_CSET" == "master" && "$HG_REV" == "0" ]]; then
-    # default configuration, check/update last_wr_tested
+if [[ "$CRON" == "1" ]]; then
+    LAST_HG_BASE=$(cat $HOME/.wrupdater/last_hg_base || echo "")
     LAST_WR_TESTED=$(cat $HOME/.wrupdater/last_wr_tested || echo "")
-    if [ "$CSET" == "$LAST_WR_TESTED" ]; then
-        echo "No new WR revisions, aborting..."
+    if [[ "$HG_REV" == "$LAST_HG_BASE" && "$CSET" == "$LAST_WR_TESTED" ]]; then
+        echo "No change, aborting..."
         exit 0
     fi
-    echo "$CSET" > $HOME/.wrupdater/last_wr_tested
 fi
 
 # Delete generated patches from the last time this ran. This may emit a
@@ -95,23 +110,8 @@ hg qrm wr-revendor || true
 hg qrm wr-regen-bindings || true
 
 # Update to desired base rev
-hg pull https://hg.mozilla.org/mozilla-central/
-hg pull https://hg.mozilla.org/integration/autoland/
-if [ "$HG_REV" != "0" ]; then
-    echo "Updating to base rev $HG_REV..."
-    hg update "$HG_REV"
-else
-    set +e
-    hg diff -r central -r autoland gfx/webrender_bindings/revision.txt | grep "revision.txt"
-    if [ ${PIPESTATUS[1]} -eq 0 ]; then
-        # There's an update inflight on autoland, so use that as the base
-        hg update autoland
-    else
-        # Otherwise use central
-        hg update central
-    fi
-    set -e
-fi
+echo "Updating to base rev $HG_REV..."
+hg update "$HG_REV"
 
 # Copy over the main folders
 pushd gfx/
@@ -207,11 +207,27 @@ if [[ $(hg status | wc -l) -ne 0 ]]; then
 fi
 
 # Advance to wr-try, applying any other patches in the queue that are in front
-# of it. Do try pushes as needed.
+# of it.
 hg qgoto wr-try
+
+# Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
-    mach try syntax -b do -p macosx64,linux,linux64,win64,linux64-base-toolchains -u all[linux64-qr,windows10-64-qr,macosx64-qr] -t all[linux64-qr,windows10-64-qr,macosx64-qr] || echo "Push failure"
-    # mach try syntax -b o -p linux64,win64 -u none -t 'svgr-e10s[windows10-64-qr],g5-e10s[linux64-qr],other-e10s[linux64-qr]' --rebuild 6 || echo "Push failure"
+    set +e
+    mach try syntax -b do                                                   \
+                    -p macosx64,linux,linux64,win64,linux64-base-toolchains \
+                    -u all[linux64-qr,windows10-64-qr,macosx64-qr]          \
+                    -t all[linux64-qr,windows10-64-qr,macosx64-qr]          \
+                    > $HOME/.wrupdater/pushlog 2>&1
+    if [ $? -eq 0 ]; then
+        if [[ "$CRON" == "1" ]]; then
+            echo "$CSET" > $HOME/.wrupdater/last_wr_tested
+            echo "$HG_REV" > $HOME/.wrupdater/last_hg_base
+        fi
+    else
+        echo "Push failure!"
+        cat $HOME/.wrupdater/pushlog
+    fi
+    set -e
     hg qpop -a
 else
     echo "Skipping push to try because PUSH_TO_TRY != 1"
