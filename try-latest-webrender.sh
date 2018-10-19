@@ -164,6 +164,11 @@ mv $TMPDIR/webrender-bindings-toml webrender_bindings/Cargo.toml
 echo $CSET | sed -e "s/commit //" > webrender_bindings/revision.txt
 popd
 
+if [[ $(hg status | wc -l) -eq 0 ]]; then
+    echo "WR version in base HG rev is identical to target WR version, aborting..."
+    exit 0
+fi
+
 if [ "$BUGNUMBER" == "0" ]; then
     BUGNUMBER=$(curl -s -H "Accept: application/json" https://bugzilla.mozilla.org/rest/bug/wr-future-update | $READJSON "bugs/0/id")
 fi
