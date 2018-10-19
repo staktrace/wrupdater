@@ -222,6 +222,13 @@ if [ "$PUSH_TO_TRY" -eq 1 ]; then
         if [[ "$CRON" == "1" ]]; then
             echo "$CSET" > $HOME/.wrupdater/last_wr_tested
             echo "$HG_REV" > $HOME/.wrupdater/last_hg_base
+            echo "{ \"comment\": \"WR @ $CSET on HG rev $HG_REV: " > $HOME/.wrupdater/bug_comment
+            grep "treeherder.*jobs" $HOME/.wrupdater/pushlog >> $HOME/.wrupdater/bug_comment
+            echo "\"}" >> $HOME/.wrupdater/bug_comment
+
+            if [ -f $HOME/.wrupdater/bzapikey ]; then
+                curl -H "Content-Type: application/json" -d "@$HOME/.wrupdater/bug_comment" "https://bugzilla.mozilla.org/rest/bug/$BUGNUMBER/comment?api_key=$(cat $HOME/.wrupdater/bzapikey)"
+            fi
         fi
     else
         echo "Push failure!"
