@@ -4,8 +4,8 @@ set -eu
 set -o pipefail
 
 # This script updates webrender in a mozilla-central repo. It requires the
-# companion awk script `version-bump.awk` to be in the same folder as
-# itself.
+# companion awk scripts `version-bump.awk` and `read-json.py` to be in the same
+# folder as itself.
 #
 # The default mode of operation applies the update and does a try push with all
 # the relevant webrender jobs. If you don't want it to do the try push, (e.g.
@@ -51,7 +51,12 @@ WR_CSET=${WR_CSET:-master}
 EXTRA_CRATES=${EXTRA_CRATES:-}
 BUGNUMBER=${BUGNUMBER:-0}
 
+# Internal variables, don't fiddle with these
+MYSELF=$(readlink -f $0)
+AWKSCRIPT=$(dirname $MYSELF)/version-bump.awk
+READJSON=$(dirname $MYSELF)/read-json.py
 TMPDIR=$HOME/.wrupdater/tmp
+
 mkdir -p $TMPDIR || true
 
 # Useful for cron
@@ -128,8 +133,6 @@ fi
 
 # Do magic to update the webrender_bindings/Cargo.toml file with updated
 # version numbers for webrender, webrender_api, euclid, app_units, log, etc.
-MYSELF=$(readlink -f $0)
-AWKSCRIPT=$(dirname $MYSELF)/version-bump.awk
 WR_VERSION=$(cat webrender/Cargo.toml | awk '/^version/ { print $0; exit }')
 WRT_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^version/ { print $0; exit }')
 RAYON_VERSION=$(cat webrender/Cargo.toml | awk '/^rayon/ { print $0; exit }')
@@ -159,7 +162,7 @@ echo $CSET | sed -e "s/commit //" > webrender_bindings/revision.txt
 popd
 
 if [ "$BUGNUMBER" == "0" ]; then
-    BUGNUMBER=$(curl -s -H "Accept: application/json" https://bugzilla.mozilla.org/rest/bug/wr-future-update | read-json.py "bugs/0/id")
+    BUGNUMBER=$(curl -s -H "Accept: application/json" https://bugzilla.mozilla.org/rest/bug/wr-future-update | $READJSON "bugs/0/id")
 fi
 
 # Save update to mq patch wr-update-code
