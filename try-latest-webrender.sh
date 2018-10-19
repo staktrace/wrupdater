@@ -4,7 +4,7 @@ set -eu
 set -o pipefail
 
 # This script updates webrender in a mozilla-central repo. It requires the
-# companion awk script `latest-webrender.awk` to be in the same folder as
+# companion awk script `version-bump.awk` to be in the same folder as
 # itself.
 #
 # The default mode of operation applies the update and does a try push with all
@@ -129,7 +129,7 @@ fi
 # Do magic to update the webrender_bindings/Cargo.toml file with updated
 # version numbers for webrender, webrender_api, euclid, app_units, log, etc.
 MYSELF=$(readlink -f $0)
-AWKSCRIPT=$(dirname $MYSELF)/latest-webrender.awk
+AWKSCRIPT=$(dirname $MYSELF)/version-bump.awk
 WR_VERSION=$(cat webrender/Cargo.toml | awk '/^version/ { print $0; exit }')
 WRT_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^version/ { print $0; exit }')
 RAYON_VERSION=$(cat webrender/Cargo.toml | awk '/^rayon/ { print $0; exit }')
