@@ -50,6 +50,7 @@ HG_REV=${HG_REV:-0}
 WR_CSET=${WR_CSET:-master}
 EXTRA_CRATES=${EXTRA_CRATES:-}
 BUGNUMBER=${BUGNUMBER:-0}
+REVIEWER=${REVIEWER:-kats}
 CRON=${CRON:-0}
 
 # Internal variables, don't fiddle with these
@@ -168,9 +169,9 @@ fi
 # Save update to mq patch wr-update-code
 hg addremove
 if [ "$WR_CSET" == "master" ]; then
-    hg qnew -m "Bug $BUGNUMBER - Update webrender to $CSET" wr-update-code
+    hg qnew -u "WR Updater Bot <graphics-team@mozilla.staktrace.com>" -m "Bug $BUGNUMBER - Update webrender to $CSET. r?$REVIEWER" wr-update-code
 else
-    hg qnew -m "Bug $BUGNUMBER - Update webrender to $WR_CSET ($CSET)" wr-update-code
+    hg qnew -u "WR Updater Bot <graphics-team@mozilla.staktrace.com>" -m "Bug $BUGNUMBER - Update webrender to $WR_CSET ($CSET). r?$REVIEWER" wr-update-code
 fi
 
 # Advance to wr-toml-fixup, applying any other patches in the queue that are
@@ -197,13 +198,13 @@ done
 ./mach vendor rust --ignore-modified # --build-peers-said-large-imports-were-ok
 hg addremove
 if [[ $(hg status | wc -l) -ne 0 ]]; then
-    hg qnew -m "Bug $BUGNUMBER - Re-vendor rust dependencies" wr-revendor
+    hg qnew -u "WR Updater Bot <graphics-team@mozilla.staktrace.com>" -m "Bug $BUGNUMBER - Re-vendor rust dependencies. r?$REVIEWER" wr-revendor
 fi
 
 # Regenerate bindings, save to mq patch wr-regen-bindings
 rustup run nightly cbindgen toolkit/library/rust --lockfile Cargo.lock --crate webrender_bindings -o gfx/webrender_bindings/webrender_ffi_generated.h
 if [[ $(hg status | wc -l) -ne 0 ]]; then
-    hg qnew -m "Bug $BUGNUMBER - Re-generate FFI header" wr-regen-bindings
+    hg qnew -u "WR Updater Bot <graphics-team@mozilla.staktrace.com>" -m "Bug $BUGNUMBER - Re-generate FFI header. r?$REVIEWER" wr-regen-bindings
 fi
 
 # Advance to wr-try, applying any other patches in the queue that are in front
