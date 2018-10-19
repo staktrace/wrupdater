@@ -223,7 +223,7 @@ if [ "$PUSH_TO_TRY" -eq 1 ]; then
             echo "$CSET" > $HOME/.wrupdater/last_wr_tested
             echo "$HG_REV" > $HOME/.wrupdater/last_hg_base
             echo "{ \"comment\": \"WR @ $CSET on HG rev $HG_REV: " > $HOME/.wrupdater/bug_comment
-            grep "treeherder.*jobs" $HOME/.wrupdater/pushlog >> $HOME/.wrupdater/bug_comment
+            grep "treeherder.*jobs" $HOME/.wrupdater/pushlog | sed -e 's#remote:##' >> $HOME/.wrupdater/bug_comment
             echo "\"}" >> $HOME/.wrupdater/bug_comment
 
             if [ -f $HOME/.wrupdater/bzapikey ]; then
