@@ -80,8 +80,10 @@ if [ "$HG_REV" == "0" ]; then
     INFLIGHT=$(hg diff -r central -r autoland gfx/webrender_bindings/revision.txt | wc -l)
     if [ $INFLIGHT -ne 0 ]; then
         # There's an update inflight on autoland, so use that as the base
+        # Use the autoland tag since we don't want to do an autoland push
+        # per cron unless the WR cset changes.
         echo "Found update already inflight on autoland, using autoland base..."
-        HG_REV=$(hg id -i -r autoland)
+        HG_REV="autoland"
     else
         # Otherwise use central
         HG_REV=$(hg id -i -r central)
