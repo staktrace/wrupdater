@@ -58,7 +58,7 @@ MYSELF=$(readlink -f $0)
 AWKSCRIPT=$(dirname $MYSELF)/version-bump.awk
 READJSON=$(dirname $MYSELF)/read-json.py
 TMPDIR=$HOME/.wrupdater/tmp
-AUTHOR=()
+AUTHOR=(-u "WR Updater Bot <graphics-team@mozilla.staktrace.com>")
 
 mkdir -p $TMPDIR || true
 
@@ -105,7 +105,6 @@ if [[ "$CRON" == "1" ]]; then
         echo "No change, aborting..."
         exit 0
     fi
-    AUTHOR=(-u "WR Updater Bot <graphics-team@mozilla.staktrace.com>")
 fi
 
 # Delete generated patches from the last time this ran. This may emit a
