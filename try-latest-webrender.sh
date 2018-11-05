@@ -96,6 +96,7 @@ git checkout master
 git pull
 git checkout $WR_CSET
 CSET=$(git log -1 | grep commit | head -n 1)
+WRPR=$(git log -1 | awk '/Auto merge/ { print $4 }')
 popd
 
 if [[ "$CRON" == "1" ]]; then
@@ -176,7 +177,9 @@ fi
 
 # Save update to mq patch wr-update-code
 hg addremove
-if [ "$WR_CSET" == "master" ]; then
+if [ "$WRPR" != "" ]; then
+    hg qnew "${AUTHOR[@]}" -m "Bug $BUGNUMBER - Update webrender to $CSET (WR PR $WRPR). r?$REVIEWER" wr-update-code
+elif [ "$WR_CSET" == "master" ]; then
     hg qnew "${AUTHOR[@]}" -m "Bug $BUGNUMBER - Update webrender to $CSET. r?$REVIEWER" wr-update-code
 else
     hg qnew "${AUTHOR[@]}" -m "Bug $BUGNUMBER - Update webrender to $WR_CSET ($CSET). r?$REVIEWER" wr-update-code
