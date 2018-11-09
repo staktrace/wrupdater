@@ -225,10 +225,10 @@ hg qgoto wr-try
 # Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
     set +e
-    mach try syntax -b do                                                   \
-                    -p macosx64,linux,linux64,win64,linux64-base-toolchains \
-                    -u all[linux64-qr,windows10-64-qr,macosx64-qr]          \
-                    -t all[linux64-qr,windows10-64-qr,macosx64-qr]          \
+    mach try syntax -b do                                                                  \
+                    -p macosx64,linux,linux64,win64,android-api-16,linux64-base-toolchains \
+                    -u all[linux64-qr,windows10-64-qr,macosx64-qr]                         \
+                    -t all[linux64-qr,windows10-64-qr,macosx64-qr]                         \
                     > $HOME/.wrupdater/pushlog 2>&1
     if [ $? -eq 0 ]; then
         if [[ "$CRON" == "1" ]]; then
