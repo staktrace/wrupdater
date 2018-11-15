@@ -120,19 +120,32 @@ hg update "$HG_REV"
 
 # Copy over the main folders
 pushd gfx/
-rm -rf webrender webrender_traits webrender_api wrench
-cp -R $WEBRENDER_SRC/webrender .
-if [ -d $WEBRENDER_SRC/webrender_traits ]; then
-    TRAITS=traits
-elif [ -d $WEBRENDER_SRC/webrender_api ]; then
+if [ -d "webrender" ]; then
+    rm -rf webrender webrender_traits webrender_api wrench
+    cp -R $WEBRENDER_SRC/webrender .
+    if [ -d $WEBRENDER_SRC/webrender_traits ]; then
+        TRAITS=traits
+    elif [ -d $WEBRENDER_SRC/webrender_api ]; then
+        TRAITS=api
+    fi
+    cp -R $WEBRENDER_SRC/webrender_$TRAITS .
+    cp -R $WEBRENDER_SRC/wrench .
+    rm -rf wrench/reftests wrench/benchmarks wrench/script
+    NUMDIRS=$(find wrench -maxdepth 1 -type d | wc -l)
+    if [ $NUMDIRS -ne 3 ]; then
+        echo "Error: wrench/ has an unexpected number of subfolders!"
+        exit 1
+    fi
+    BINDINGS="$PWD/webrender_bindings"
+elif [ -d "wr" ]; then
+    rm -rf wr
+    cp -R $WEBRENDER_SRC wr
+    rm -rf wr/.git wr/target
+    cd wr
     TRAITS=api
-fi
-cp -R $WEBRENDER_SRC/webrender_$TRAITS .
-cp -R $WEBRENDER_SRC/wrench .
-rm -rf wrench/reftests wrench/benchmarks wrench/script
-NUMDIRS=$(find wrench -maxdepth 1 -type d | wc -l)
-if [ $NUMDIRS -ne 3 ]; then
-    echo "Error: wrench/ has an unexpected number of subfolders!"
+    BINDINGS="$PWD/../webrender_bindings"
+else
+    echo "Error: didn't find either gfx/webrender or gfx/wr!"
     exit 1
 fi
 
@@ -149,7 +162,7 @@ LOG_VERSION=$(cat webrender/Cargo.toml | awk '/^log/ { print $0; exit }')
 DWROTE_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^dwrote/ { print $0; exit }')
 CF_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^core-foundation/ { print $0; exit }')
 CG_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^core-graphics/ { print $0; exit }')
-sed -e "s/webrender_traits/webrender_${TRAITS}/g" webrender_bindings/Cargo.toml | awk -f $AWKSCRIPT \
+sed -e "s/webrender_traits/webrender_${TRAITS}/g" $BINDINGS/Cargo.toml | awk -f $AWKSCRIPT \
     -v wr_version="${WR_VERSION}" \
     -v wrt_version="${WRT_VERSION}" \
     -v rayon_version="${RAYON_VERSION}" \
@@ -162,8 +175,8 @@ sed -e "s/webrender_traits/webrender_${TRAITS}/g" webrender_bindings/Cargo.toml 
     -v cf_version="${CF_VERSION}" \
     -v cg_version="${CG_VERSION}" \
     > $TMPDIR/webrender-bindings-toml
-mv $TMPDIR/webrender-bindings-toml webrender_bindings/Cargo.toml
-echo $CSET | sed -e "s/commit //" > webrender_bindings/revision.txt
+mv $TMPDIR/webrender-bindings-toml $BINDINGS/Cargo.toml
+echo $CSET | sed -e "s/commit //" > $BINDINGS/revision.txt
 popd
 
 if [[ $(hg status | wc -l) -eq 0 ]]; then
