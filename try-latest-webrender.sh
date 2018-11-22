@@ -191,7 +191,7 @@ fi
 # Save update to mq patch wr-update-code
 hg addremove
 if [ "$WRPR" != "" ]; then
-    hg qnew "${AUTHOR[@]}" -m "Bug $BUGNUMBER - Update webrender to $CSET (WR PR $WRPR). r?$REVIEWER" wr-update-code
+    hg qnew "${AUTHOR[@]}" -l <(echo "Bug $BUGNUMBER - Update webrender to $CSET (WR PR $WRPR). r?$REVIEWER"; echo ""; echo "https://github.com/servo/webrender/pull/${WRPR:1}") wr-update-code
 elif [ "$WR_CSET" == "master" ]; then
     hg qnew "${AUTHOR[@]}" -m "Bug $BUGNUMBER - Update webrender to $CSET. r?$REVIEWER" wr-update-code
 else
