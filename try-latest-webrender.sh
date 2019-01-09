@@ -45,7 +45,7 @@ WEBRENDER_SRC=${WEBRENDER_SRC:-$HOME/zspace/test-webrender}
 # For most general usefulness you will want to override these:
 PUSH_TO_TRY=${PUSH_TO_TRY:-1}
 
-# These are optional but handy
+# These can be overridden from the command line if desired
 HG_REV=${HG_REV:-0}
 WR_CSET=${WR_CSET:-master}
 EXTRA_CRATES=${EXTRA_CRATES:-}
@@ -238,11 +238,12 @@ hg qgoto wr-try
 # Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
     set +e
-    mach try syntax -b do                                                                  \
-                    -p macosx64,linux,linux64,win64,android-api-16,linux64-base-toolchains \
-                    -u all[linux64-qr,windows10-64-qr,macosx64-qr]                         \
-                    -t all[linux64-qr,windows10-64-qr,macosx64-qr]                         \
-                    > $HOME/.wrupdater/pushlog 2>&1
+    mach try fuzzy -q "'qr" \
+                   -q "base-toolchains" \
+                   -q "'webrender "'!docker' \
+                   -q "'build-linux/ "'!pgo' \
+                   -q "'build-android-api-16/" \
+               > $HOME/.wrupdater/pushlog 2>&1
     if [ $? -eq 0 ]; then
         if [[ "$CRON" == "1" ]]; then
             echo "$CSET" > $HOME/.wrupdater/last_wr_tested
