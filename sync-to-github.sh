@@ -3,14 +3,14 @@
 set -eu
 set -o pipefail
 
-# This script will copy changes to gfx/wr from a mozilla git repo into a
+# This script will copy changes to gfx/wr from a mozilla cinnabar repo into a
 # webrender repo and generate a PR. It does so by exporting the patches from
 # the mozilla repo using `git format-patch` and then importing them into the
 # WR repo using `git am`. Presumably this path is well tested because Linus
 # uses it. And it's simple and easy to debug so that's nice.
 
 # Requirements:
-# 1) Mozilla git repo. Find a place to create a new worktree that you won't
+# 1) Mozilla cinnabar repo. Find a place to create a new worktree that you won't
 #    fiddle with, let's call it $MOZILLA_SRC. Then go to an existing checkout
 #    and run this (with appropriate MOZILLA_SRC value):
 #     git fetch origin master
@@ -67,15 +67,20 @@ git checkout $MOZ_NEW_REV
 if [[ "$LOCAL_CHANGES" == "0" ]]; then
     git pull
 fi
-# Generate patches and update the "last synced" branch pointer
+# Generate patches and delete any that didn't touch gfx/wr
 git format-patch -o "$PATCHDIR" -pk --relative=gfx/wr $MOZ_LAST_REV
-if [[ "$CRON" == "1" ]]; then
-    git branch -f $MOZ_LAST_REV
-fi
+find "$PATCHDIR" -size 0b -delete
+# Insert hg rev into commit messages
+for patch in $(find "$PATCHDIR" -type f); do
+    GIT_REV=$(head -n 1 $patch | awk '/^From/ { print $2 }')
+    HG_REV=$(git cinnabar git2hg $GIT_REV)
+    awk -v "HG_REV=$HG_REV" \
+        'BEGIN { done=0 } /^diff --git/ && done==0 { print "[wrupdater] From https://hg.mozilla.org/mozilla-central/rev/" HG_REV "\n"; done=1 } /^/ { print $0 }' \
+        $patch > $TMPDIR/patch-with-hg-rev
+    mv $TMPDIR/patch-with-hg-rev $patch
+done
 popd
 
-# Delete empty patches (any m-c commits that didn't touch gfx/wr)
-find "$PATCHDIR" -size 0b -delete
 PATCHCOUNT=$(find "$PATCHDIR" -type f | wc -l)
 if [[ $PATCHCOUNT -eq 0 ]]; then
     rm -rf "$PATCHDIR"
@@ -95,10 +100,19 @@ if [[ "$CRON" == "1" ]]; then
 else
     git checkout -B __wrtestsync __wrsync
 fi
-# Apply new patches, then delete patchdir to indicate successful application of
-# patches.
+
+# Apply new patches
 git am $PATCHDIR/*
+
+# Delete patchdir and update cinnabar branch to indicate successful ownership
+# transfer of patches.
 rm -rf "$PATCHDIR"
+if [[ "$CRON" == "1" ]]; then
+    pushd $MOZILLA_SRC
+    git branch -f $MOZ_LAST_REV
+    popd
+fi
+
 # Force-update the PR branch and try to generate a PR. If there's a pre-existing
 # PR the force-update should just update it with new patches and (untested) the
 # attempt to create a new PR will fail, which is fine. Otherwise this should
