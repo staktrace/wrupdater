@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu
+set -eux
 set -o pipefail
 
 # This script will copy changes to gfx/wr from a mozilla cinnabar repo into a
@@ -45,8 +45,8 @@ WEBRENDER_SRC=${WEBRENDER_SRC:-$HOME/zspace/webrender-sync}
 # These can be overridden from the command line if desired for debugging/fiddling
 MOZ_LAST_REV=${MOZ_LAST_REV:-__wrlastsync}
 MOZ_NEW_REV=${MOZ_NEW_REV:-__wrsync}
+MOZ_LOCAL_BRANCH=${MOZ_LOCAL_BRANCH:-0}
 CRON=${CRON:-0}
-LOCAL_CHANGES=${LOCAL_CHANGES:-0}
 
 # Internal variables, don't fiddle with these
 TMPDIR=$HOME/.wrupdater/tmp
@@ -61,11 +61,13 @@ mkdir -p "$PATCHDIR"
 # Useful for cron
 echo "Running $0 at $(date)"
 
-# Pull latest m-c, except if LOCAL_CHANGES=1 (which exists for debugging only)
+# Pull latest m-c, or use MOZ_LOCAL_BRANCH if specified (for debugging only)
 pushd $MOZILLA_SRC
-git checkout $MOZ_NEW_REV
-if [[ "$LOCAL_CHANGES" == "0" ]]; then
+if [[ "$MOZ_LOCAL_BRANCH" == "0" ]]; then
+    git checkout $MOZ_NEW_REV
     git pull
+else
+    git checkout $MOZ_LOCAL_BRANCH
 fi
 # Generate patches and delete any that didn't touch gfx/wr
 git format-patch -o "$PATCHDIR" -pk --relative=gfx/wr $MOZ_LAST_REV
