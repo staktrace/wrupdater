@@ -121,7 +121,7 @@ fi
 # create a new PR.
 if [[ "$CRON" == "1" ]]; then
     GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push moz-gfx +__wrlastsync
-    echo '{ "title": "Re-sync from mozilla-central", "body": "Incoming changes from mozilla-central!", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $HOME/.wrupdater/pull_request
+    echo '{ "title": "Sync changes from mozilla-central", "body": "", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $HOME/.wrupdater/pull_request
     curl -i -H "Accept: application/vnd.github.v3+json" -d "@$HOME/.wrupdater/pull_request" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "https://api.github.com/repos/servo/webrender/pulls"
 fi
 popd
