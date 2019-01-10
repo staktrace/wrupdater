@@ -86,6 +86,11 @@ popd
 PATCHCOUNT=$(find "$PATCHDIR" -type f | wc -l)
 if [[ $PATCHCOUNT -eq 0 ]]; then
     rm -rf "$PATCHDIR"
+    if [[ "$CRON" == "1" ]]; then
+        pushd $MOZILLA_SRC
+        git branch -f $MOZ_LAST_REV
+        popd
+    fi
     echo "No patches found, aborting..."
     exit 0
 fi
