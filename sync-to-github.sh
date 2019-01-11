@@ -125,7 +125,8 @@ fi
 # attempt to create a new PR will fail, which is fine. Otherwise this should
 # create a new PR.
 if [[ "$CRON" == "1" ]]; then
-    GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push moz-gfx +__wrlastsync
+    # TODO: do this push over https using the personal access token instead of SSH
+    GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push git@github.com:moz-gfx/webrender +__wrlastsync
     echo '{ "title": "Sync changes from mozilla-central", "body": "", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $TMPDIR/pull_request
     curl -isS -H "Accept: application/vnd.github.v3+json" -d "@$TMPDIR/pull_request" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "https://api.github.com/repos/servo/webrender/pulls" | tee $TMPDIR/pr_response
 
