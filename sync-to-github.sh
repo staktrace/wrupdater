@@ -126,7 +126,29 @@ fi
 # create a new PR.
 if [[ "$CRON" == "1" ]]; then
     GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push moz-gfx +__wrlastsync
-    echo '{ "title": "Sync changes from mozilla-central", "body": "", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $HOME/.wrupdater/pull_request
-    curl -i -H "Accept: application/vnd.github.v3+json" -d "@$HOME/.wrupdater/pull_request" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "https://api.github.com/repos/servo/webrender/pulls"
+    echo '{ "title": "Sync changes from mozilla-central", "body": "", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $TMPDIR/pull_request
+    curl -isS -H "Accept: application/vnd.github.v3+json" -d "@$TMPDIR/pull_request" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "https://api.github.com/repos/servo/webrender/pulls" | tee $TMPDIR/pr_response
+
+    set +e
+    grep "A pull request already exists for moz-gfx:__wrlastsync" $TMPDIR/pr_response
+    ALREADY_EXISTS=$?
+    grep '"issue_url":' $TMPDIR/pr_response
+    NEW_ISSUE=$?
+    set -e
+
+    # Ensure we have a comment_url file with the PR number in there to post comments
+    if [ $ALREADY_EXISTS -eq 0 ]; then
+        # Old PR was force-updated, so we need to bors-servo r+ the old one again
+    elif [ $NEW_ISSUE -eq 0 ]; then
+        # New PR was created, so let's get the URL to publish comments to
+        awk '/^Location:/ { sub(/\r/, "", $2); sub(/\/pulls\//, "/issues/", $2); print $2 "/comments" }' $TMPDIR/pr_response > $TMPDIR/comment_url
+    else
+        echo 'Unrecognized response from Github! The next run of this script will try again, I guess'
+        exit 1
+    fi
+
+    # Leave a comment to tell bors to merge the PR
+    echo '{ "body": "@bors-servo r+" }' > $TMPDIR/bors_rplus
+    curl -isS -H "Accept: application/vnd.github.v3+json" -d "@$TMPDIR/bors_rplus" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "$(cat $TMPDIR/comment_url)" | tee $TMPDIR/comment_response
 fi
 popd
