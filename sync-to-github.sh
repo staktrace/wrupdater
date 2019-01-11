@@ -56,7 +56,6 @@ if [ -d "$PATCHDIR" ]; then
     echo "Found a pre-existing dir at $PATCHDIR, assuming previous run failed. Aborting..."
     exit 1
 fi
-mkdir -p "$PATCHDIR"
 
 # Useful for cron
 echo "Running $0 at $(date)"
@@ -70,6 +69,7 @@ else
     git checkout $MOZ_LOCAL_BRANCH
 fi
 # Generate patches and delete any that didn't touch gfx/wr
+mkdir -p "$PATCHDIR"
 git format-patch -o "$PATCHDIR" -pk --relative=gfx/wr $MOZ_LAST_REV
 find "$PATCHDIR" -size 0b -delete
 # Insert hg rev into commit messages
