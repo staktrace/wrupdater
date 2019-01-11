@@ -83,6 +83,7 @@ for patch in $(find "$PATCHDIR" -type f); do
 done
 popd
 
+# Abort if there is no work to do (i.e. no patches to port)
 PATCHCOUNT=$(find "$PATCHDIR" -type f | wc -l)
 if [[ $PATCHCOUNT -eq 0 ]]; then
     rm -rf "$PATCHDIR"
@@ -97,7 +98,10 @@ fi
 
 # Pull latest WR, and rebase the __wrlastsync onto latest master. So any
 # previous patches that got merged will drop out and we'll keep the ones that
-# didn't.
+# didn't. If we ever have stuff landing in GH before it gets into m-c (maybe
+# some urgent patch needed by servo/other folks?) then this rebase should also
+# handle that gracefully, as long as there are no merge conflicts. I haven't
+# explicitly tested this though since it should be rare.
 pushd $WEBRENDER_SRC
 git checkout __wrsync
 git pull
@@ -112,7 +116,7 @@ fi
 git am $PATCHDIR/*
 
 # Delete patchdir and update cinnabar branch to indicate successful ownership
-# transfer of patches.
+# transfer of patch files.
 rm -rf "$PATCHDIR"
 if [[ "$CRON" == "1" ]]; then
     pushd $MOZILLA_SRC
@@ -123,7 +127,8 @@ fi
 # Force-update the PR branch and try to generate a PR. If there's a pre-existing
 # PR the force-update should just update it with new patches and the
 # attempt to create a new PR will fail, which is fine. Otherwise this should
-# create a new PR.
+# create a new PR. We detect which of the two cases occurred below, and then
+# leave a comment on the PR requesting bors to merge.
 if [[ "$CRON" == "1" ]]; then
     # TODO: do this push over https using the personal access token instead of SSH
     GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push git@github.com:moz-gfx/webrender +__wrlastsync
