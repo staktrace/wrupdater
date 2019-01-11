@@ -53,6 +53,7 @@ REVIEWER=${REVIEWER?"REVIEWER is required"}
 # Internal variables, don't fiddle with these
 MYSELF=$(readlink -f $0)
 AWKSCRIPT=$(dirname $MYSELF)/version-bump.awk
+BUGINSERTER=$(dirname $MYSELF)/insert-bug-number.awk
 READJSON=$(dirname $MYSELF)/read-json.py
 TMPDIR=$HOME/.wrupdater/tmp
 PATCHDIR=$TMPDIR/patches-incoming
@@ -96,6 +97,11 @@ if [ "$BUGNUMBER" == "0" ]; then
     fi
     BUGNUMBER=$(cat $TMPDIR/new_bug.response | $READJSON "id")
 fi
+
+for patch in $(find "$PATCHDIR" -type f); do
+    awk -v "BUGNUMBER=$BUGNUMBER" -v "REVIEWER=$REVIEWER" -f $BUGINSERTER $patch > $TMPDIR/patch-with-bug-number
+    mv $TMPDIR/patch-with-bug-number $patch
+done
 
 # Update to desired base rev
 echo "Updating to base rev $HG_REV..."
@@ -167,7 +173,7 @@ rustup run nightly cbindgen toolkit/library/rust --lockfile Cargo.lock --crate w
 git add gfx/webrender_bindings/webrender_ffi_generated.h
 git commit -m "Regenerate FFI header for changes in WR PR #$WRPR." --author="$AUTHOR" || true
 
-gfx-phab submit --upstream $GIT_BASE -b "$BUGNUMBER" -r "$REVIEWER" --yes
+gfx-phab submit --upstream $GIT_BASE
 
 # Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
