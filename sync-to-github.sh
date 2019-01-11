@@ -121,7 +121,7 @@ if [[ "$CRON" == "1" ]]; then
 fi
 
 # Force-update the PR branch and try to generate a PR. If there's a pre-existing
-# PR the force-update should just update it with new patches and (untested) the
+# PR the force-update should just update it with new patches and the
 # attempt to create a new PR will fail, which is fine. Otherwise this should
 # create a new PR.
 if [[ "$CRON" == "1" ]]; then
