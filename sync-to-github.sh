@@ -113,7 +113,7 @@ else
 fi
 
 # Apply new patches
-git am $PATCHDIR/*
+GIT_COMMITTER_NAME="wrupdater" GIT_COMMITTER_EMAIL="graphics-team@mozilla.staktrace.com" git am $PATCHDIR/*
 
 # Delete patchdir and update cinnabar branch to indicate successful ownership
 # transfer of patch files.
