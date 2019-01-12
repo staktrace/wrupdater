@@ -145,6 +145,7 @@ if [[ "$CRON" == "1" ]]; then
     # Ensure we have a comment_url file with the PR number in there to post comments
     if [ $ALREADY_EXISTS -eq 0 ]; then
         # Old PR was force-updated, so we need to bors-servo r+ the old one again
+        echo "Using existing PR"
     elif [ $NEW_ISSUE -eq 0 ]; then
         # New PR was created, so let's get the URL to publish comments to
         awk '/^Location:/ { sub(/\r/, "", $2); sub(/\/pulls\//, "/issues/", $2); print $2 "/comments" }' $TMPDIR/pr_response > $TMPDIR/comment_url
