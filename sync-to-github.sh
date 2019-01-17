@@ -113,7 +113,9 @@ else
 fi
 
 # Apply new patches
-GIT_COMMITTER_NAME="wrupdater" GIT_COMMITTER_EMAIL="graphics-team@mozilla.staktrace.com" git am $PATCHDIR/*
+export GIT_COMMITTER_NAME="wrupdater"
+export GIT_COMMITTER_EMAIL="graphics-team@mozilla.staktrace.com"
+git am $PATCHDIR/* # || git am --skip # if a patch double-landed thwn skip the am failure
 
 # Delete patchdir and update cinnabar branch to indicate successful ownership
 # transfer of patch files.
