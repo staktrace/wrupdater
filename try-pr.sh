@@ -162,12 +162,7 @@ done
 git add -A third_party/rust Cargo.*
 git commit -m "Update crate versions for changes in WR PR #$WRPR." --author="$AUTHOR" || true
 
-# Regenerate bindings, save to mq patch wr-regen-bindings
-rustup run nightly cbindgen toolkit/library/rust --lockfile Cargo.lock --crate webrender_bindings -o gfx/webrender_bindings/webrender_ffi_generated.h
-git add gfx/webrender_bindings/webrender_ffi_generated.h
-git commit -m "Regenerate FFI header for changes in WR PR #$WRPR." --author="$AUTHOR" || true
-
-gfx-phab submit --upstream $GIT_BASE -b "$BUGNUMBER" -r "$REVIEWER" --yes
+# gfx-phab submit --upstream $GIT_BASE -b "$BUGNUMBER" -r "$REVIEWER" --yes
 
 # Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
