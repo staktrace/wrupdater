@@ -109,7 +109,8 @@ if [[ "$CRON" == "1" ]]; then
     git checkout __wrlastsync
     git rebase __wrsync
 else
-    git checkout -B __wrtestsync __wrsync
+    git checkout -B __wrtestsync __wrlastsync
+    git rebase __wrsync
 fi
 
 # Apply new patches
