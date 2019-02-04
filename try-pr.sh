@@ -127,7 +127,7 @@ EUCLID_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^euclid/ { print $0;
 AU_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^app_units/ { print $0; exit }')
 GLEAM_VERSION=$(cat webrender/Cargo.toml | awk '/^gleam/ { print $0; exit }')
 LOG_VERSION=$(cat webrender/Cargo.toml | awk '/^log/ { print $0; exit }')
-DWROTE_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^dwrote/ { print $0; exit }')
+DWROTE_VERSION=$(cat webrender/Cargo.toml | awk '/^dwrote/ { print $0; exit }')
 CF_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^core-foundation/ { print $0; exit }')
 CG_VERSION=$(cat webrender_${TRAITS}/Cargo.toml | awk '/^core-graphics/ { print $0; exit }')
 sed -e "s/webrender_traits/webrender_${TRAITS}/g" $BINDINGS/Cargo.toml | awk -f $AWKSCRIPT \
