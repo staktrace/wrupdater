@@ -44,7 +44,6 @@ WEBRENDER_SRC=${WEBRENDER_SRC:-$HOME/zspace/webrender-sync}
 
 # These can be overridden from the command line if desired for debugging/fiddling
 MOZ_LAST_REV=${MOZ_LAST_REV:-__wrlastsync}
-MOZ_NEW_REV=${MOZ_NEW_REV:-__wrsync}
 MOZ_LOCAL_BRANCH=${MOZ_LOCAL_BRANCH:-0}
 CRON=${CRON:-0}
 
@@ -63,7 +62,7 @@ echo "Running $0 at $(date)"
 # Pull latest m-c, or use MOZ_LOCAL_BRANCH if specified (for debugging only)
 pushd $MOZILLA_SRC
 if [[ "$MOZ_LOCAL_BRANCH" == "0" ]]; then
-    git checkout $MOZ_NEW_REV
+    git checkout __wrsync
     git pull
 else
     git checkout $MOZ_LOCAL_BRANCH
