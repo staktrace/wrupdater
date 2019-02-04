@@ -84,6 +84,12 @@ git fetch origin master pull/$WRPR/head:__wrincoming
 mkdir -p "$PATCHDIR"
 git format-patch -o "$PATCHDIR" -pk origin/master..__wrincoming
 find "$PATCHDIR" -size 0b -delete
+for patch in $(find "$PATCHDIR" -type f); do
+    awk -v "WRPR=$WRPR" \
+        'BEGIN { done=0 } /^diff --git/ && done==0 { print "[wrupdater] From https://github.com/servo/webrender/pull/" WRPR "\n"; done=1 } /^/ { print $0 }' \
+        $patch > $TMPDIR/patch-with-pr-number
+    mv $TMPDIR/patch-with-pr-number $patch
+done
 popd
 
 if [ "$BUGNUMBER" == "0" ]; then
@@ -162,7 +168,7 @@ done
 git add -A third_party/rust Cargo.*
 git commit -m "Update crate versions for changes in WR PR #$WRPR." --author="$AUTHOR" || true
 
-# gfx-phab submit --upstream $GIT_BASE -b "$BUGNUMBER" -r "$REVIEWER" --yes
+gfx-phab submit --upstream $GIT_BASE -b "$BUGNUMBER" -r "$REVIEWER" --yes
 
 # Do try pushes as needed.
 if [ "$PUSH_TO_TRY" -eq 1 ]; then
