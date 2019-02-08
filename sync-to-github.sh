@@ -50,6 +50,7 @@ CRON=${CRON:-0}
 # Internal variables, don't fiddle with these
 TMPDIR=$HOME/.wrupdater/tmp
 PATCHDIR=$TMPDIR/patches
+FIXES=
 
 # Useful for cron
 echo "Running $0 at $(date)"
@@ -94,6 +95,9 @@ if [[ $PATCHCOUNT -eq 0 ]]; then
     echo "No patches found, aborting..."
     exit 0
 fi
+
+# Insert any necessary reordering here
+# mv $PATCHDIR/{0078,0223}-Bug-1522015-WR-don-t-panic-on-non-mappable-clip-rect.patch
 
 set +e
 FIXES=$(grep "\[wrupdater\] From https://github.com/servo/webrender/pull" $PATCHDIR/* | sed -e "s%.*pull/%Fixes #%")
