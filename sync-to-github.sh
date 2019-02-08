@@ -51,13 +51,13 @@ CRON=${CRON:-0}
 TMPDIR=$HOME/.wrupdater/tmp
 PATCHDIR=$TMPDIR/patches
 
+# Useful for cron
+echo "Running $0 at $(date)"
+
 if [ -d "$PATCHDIR" ]; then
     echo "Found a pre-existing dir at $PATCHDIR, assuming previous run failed. Aborting..."
     exit 1
 fi
-
-# Useful for cron
-echo "Running $0 at $(date)"
 
 # Pull latest m-c, or use MOZ_LOCAL_BRANCH if specified (for debugging only)
 pushd $MOZILLA_SRC
