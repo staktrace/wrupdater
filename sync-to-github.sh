@@ -95,8 +95,10 @@ if [[ $PATCHCOUNT -eq 0 ]]; then
     exit 0
 fi
 
+set +e
 FIXES=$(grep "\[wrupdater\] From https://github.com/servo/webrender/pull" $PATCHDIR/* | sed -e "s%.*pull/%Fixes #%")
 echo $FIXES
+set -e
 
 # Pull latest WR, and rebase the __wrlastsync onto latest master. So any
 # previous patches that got merged will drop out and we'll keep the ones that
