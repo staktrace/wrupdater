@@ -95,6 +95,9 @@ if [[ $PATCHCOUNT -eq 0 ]]; then
     exit 0
 fi
 
+FIXES=$(grep "\[wrupdater\] From https://github.com/servo/webrender/pull" $PATCHDIR/* | sed -e "s%.*pull/%Fixes #%")
+echo $FIXES
+
 # Pull latest WR, and rebase the __wrlastsync onto latest master. So any
 # previous patches that got merged will drop out and we'll keep the ones that
 # didn't. If we ever have stuff landing in GH before it gets into m-c (maybe
@@ -134,7 +137,7 @@ fi
 if [[ "$CRON" == "1" ]]; then
     # TODO: do this push over https using the personal access token instead of SSH
     GIT_SSH_COMMAND='ssh -i ~/.wrupdater/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes' git push git@github.com:moz-gfx/webrender +__wrlastsync
-    echo '{ "title": "Sync changes from mozilla-central", "body": "", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $TMPDIR/pull_request
+    echo '{ "title": "Sync changes from mozilla-central", "body": "'"$FIXES"'", "head": "moz-gfx:__wrlastsync", "base": "master" }' > $TMPDIR/pull_request
     curl -isS -H "Accept: application/vnd.github.v3+json" -d "@$TMPDIR/pull_request" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "https://api.github.com/repos/servo/webrender/pulls" | tee $TMPDIR/pr_response
 
     set +e
@@ -148,6 +151,10 @@ if [[ "$CRON" == "1" ]]; then
     if [ $ALREADY_EXISTS -eq 0 ]; then
         # Old PR was force-updated, so we need to bors-servo r+ the old one again
         echo "Using existing PR"
+        if [[ "$FIXES" != "" ]]; then
+            echo '{ "body": "'"$FIXES"'" }' > $TMPDIR/more_fixes
+            curl -isS -H "Accept: application/vnd.github.v3+json" -d "@$TMPDIR/more_fixes" -u "moz-gfx:$(cat $HOME/.wrupdater/ghapikey)" "$(cat $TMPDIR/comment_url)" | tee $TMPDIR/more_fixes_response
+        fi
     elif [ $NEW_ISSUE -eq 0 ]; then
         # New PR was created, so let's get the URL to publish comments to
         awk '/^Location:/ { sub(/\r/, "", $2); sub(/\/pulls\//, "/issues/", $2); print $2 "/comments" }' $TMPDIR/pr_response > $TMPDIR/comment_url
