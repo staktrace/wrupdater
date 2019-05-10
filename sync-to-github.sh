@@ -84,6 +84,7 @@ fi
 pushd "${WORKDIR}/webrender"
 git fetch moz-gfx
 git checkout -B wrupdater moz-gfx/wrupdater || git checkout -B wrupdater master
+GIT_SSH_COMMAND="ssh -i ${WORKDIR}/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes" git push moz-gfx wrupdater:wrupdater
 popd
 
 # Bring the mozilla-central repo to a known good up-to-date state
@@ -109,9 +110,9 @@ deactivate
 
 # Check to see if we have changes that need pushing
 pushd "${WORKDIR}/webrender"
-PATCHCOUNT=$(git log --oneline master..wrupdater | wc -l)
+PATCHCOUNT=$(git log --oneline moz-gfx/wrupdater..wrupdater | wc -l)
 if [[ ${PATCHCOUNT} -eq 0 ]]; then
-    echo "No patches found, aborting..."
+    echo "No new patches found, aborting..."
     exit 0
 fi
 
