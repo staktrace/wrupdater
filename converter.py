@@ -40,7 +40,7 @@ def load_git_repository():
             continue
         hg_rev = m.group(1)
         commit_map[hg_rev] = GitCommit(hg_rev, commit)
-        eprint("Loaded pre-existing commit hg %s -> git %s" % (hg_rev, commit.oid))
+        # eprint("Loaded pre-existing commit hg %s -> git %s" % (hg_rev, commit.oid))
     return commit_map
 
 def timeof(git_commit):

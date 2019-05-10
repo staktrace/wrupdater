@@ -8,7 +8,13 @@ set -o pipefail
 #
 # Prerequisites:
 #  - This script must be run on Linux (uses Linux `readlink` semantics)
-#  - libgit2 version 0.27.* must be installed on the system
+#  - libgit2 version 0.27.* must be installed on the system:
+#      wget -nv https://github.com/libgit2/libgit2/archive/v0.27.8.tar.gz
+#      tar xf v0.27.8.tar.gz && rm -rf v0.27.8.tar.gz
+#      pushd libgit2-0.27.8
+#      cmake . && make && sudo make install
+#      popd
+#      sudo ldconfig
 #  - python3 must be installed on the system
 #  - The MOZILLA_SRC environment variable should point to a mercurial clone
 #    of mozilla-central
@@ -89,7 +95,9 @@ popd
 if [ ! -d "${WORKDIR}/venv" ]; then
     virtualenv --python=python3 "${WORKDIR}/venv"
 fi
+set +u # virtualenv tries to use undefined PS1, what a piece of trash
 source "${WORKDIR}/venv/bin/activate"
+set -u
 pip install -r "${MYDIR}/converter-requirements.txt"
 
 # Run the converter
@@ -118,23 +126,23 @@ GIT_SSH_COMMAND="ssh -i ${WORKDIR}/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes" git
 
 CURL_HEADER="Accept: application/vnd.github.v3+json"
 CURL_AUTH="moz-gfx:$(cat ${WORKDIR}/moz-gfx-ssh/ghapikey)"
-CURL="curl -sSfL -H \"${CURL_HEADER}\" -u \"${CURL_AUTH}\""
+CURL=(curl -sSfL -H "${CURL_HEADER}" -u "${CURL_AUTH}")
 
 # Check if there's an existing PR open
-${CURL} "https://api.github.com/repos/servo/webrender/pulls?head=moz-gfx:wrupdater" | tee "${TMPDIR}/pr.get"
+"${CURL[@]}" "https://api.github.com/repos/servo/webrender/pulls?head=moz-gfx:wrupdater" | tee "${TMPDIR}/pr.get"
 set +e
 COMMENT_URL=$(cat "${TMPDIR}/pr.get" | ${MYDIR}/read-json.py "0/comments_url")
 HAS_COMMENT_URL=$?
 set -e
 
-if [ ${HAS_COMMENT_URL} -ne 0 ]
+if [ ${HAS_COMMENT_URL} -ne 0 ]; then
     # The PR doesn't exist yet, so let's create it
     echo '{ "title": "Sync changes from mozilla-central", "body": "'"${FIXES}"'", "head": "moz-gfx:wrupdater", "base": "master" }' > "${TMPDIR}/pr.create"
-    ${CURL} -d "@${TMPDIR}/pr.create" "https://api.github.com/repos/servo/webrender/pulls" | tee "${TMPDIR}/pr.response"
+    "${CURL[@]}" -d "@${TMPDIR}/pr.create" "https://api.github.com/repos/servo/webrender/pulls" | tee "${TMPDIR}/pr.response"
     COMMENT_URL=$(cat "${TMPDIR}/pr.response" | ${MYDIR}/read-json.py "comments_url")
 fi
 
 # At this point COMMENTS_URL should be set, so leave a comment to tell bors
 # to merge the PR.
 echo '{ "body": "@bors-servo r+" }' > "${TMPDIR}/bors_rplus"
-${CURL} -d "@${TMPDIR}/bors_rplus" "${COMMENT_URL}
+"${CURL[@]}" -d "@${TMPDIR}/bors_rplus" "${COMMENT_URL}"
