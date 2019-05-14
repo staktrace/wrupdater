@@ -164,6 +164,7 @@ class FakeCommit:
 def fake_commit(hg_rev, parent1, parent2):
     if parent1 is None:
         eprint("ERROR: Trying to build on None")
+        exit(1)
     oid = "githash_%s" % hash(parent1)
     eprint("Fake-built %s" % oid)
     return FakeCommit(oid)
