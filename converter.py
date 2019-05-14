@@ -268,7 +268,7 @@ def build_git_commits(rev):
     git_parent_2 = build_git_commits(hg_commits[rev].parents[1])
     if git_parent_1 is None or git_parent_2 is None or git_parent_1 == git_parent_2:
         if not hg_commits[rev].touches_wr_code:
-            return git_parent_1
+            return git_parent_1 if git_parent_2 is None else git_parent_2
 
         eprint("WARNING: Found merge rev %s whose parents have identical WR code, but modifies WR" % rev)
         eprint("Building git equivalent for %s on top of %s" % (rev, git_parent_1))
