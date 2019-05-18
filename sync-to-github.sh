@@ -18,22 +18,18 @@ set -o pipefail
 #  - python3 must be installed on the system
 #  - The MOZILLA_SRC environment variable should point to a mercurial clone
 #    of mozilla-central
-#  - the ~/.wrupdater/moz-gfx-ssh folder must exist and contain two files,
-#    id_rsa and ghapikey. These can be generated as follows:
-#      mkdir -p $HOME/.wrupater/moz-gfx-ssh
-#      ssh-keygen -t rsa -b 4096 -f $HOME/.wrupdater/moz-gfx-ssh/id_rsa
-#    Upload the public key to the moz-gfx Github account.
-#    Settings -> Developer Settings -> Personal access tokens) with the
-#    public_repo scope (at least) and put it at
-#    $HOME/.wrupdater/moz-gfx-ssh/ghapikey
+#  - the ~/.wrupdater/secrets folder must exist and contain a ghapikey file.
+#    This must contain an access token (generate by going to Github,
+#    Settings -> Developer Settings -> Personal access tokens) with at least the
+#    public_repo OAuth scope.
 #
 # What the script does:
 #  - Uses the ~/.wrupdater directory for staging. In this directory:
-#    - moz-gfx-ssh/ contains access credentials as described above
+#    - secrets/ contains access credentials as described above
 #    - tmp/ contains temp files
 #    - venv/ contains a python3 virtualenv with dependencies
 #    - webrender/ contains a git clone of the webrender repo
-#    Other than the moz-gfx-ssh folder, everything is created and initialized
+#    Other than the secrets folder, everything is created and initialized
 #    if it doesn't already exist.
 #  - Pulls the latest upstream changes into the mercurial and git repositories
 #  - Runs the converter.py script, which updates the wrupdater branch in the
@@ -55,11 +51,8 @@ MYDIR=$(dirname "${MYSELF}")
 WORKDIR="$HOME/.wrupdater"
 TMPDIR="$WORKDIR/tmp"
 
-if [ ! -f "${WORKDIR}/moz-gfx-ssh/id_rsa" ]; then
-    echo "Error: no SSH private key found at ${WORKDIR}/moz-gfx-ssh/id_rsa" > /dev/stderr
-    exit 1
-elif [ ! -f "${WORKDIR}/moz-gfx-ssh/ghapikey" ]; then
-    echo "Error: no Github API token found at ${WORKDIR}/moz-gfx-ssh/ghapikey" > /dev/stderr
+if [ ! -f "${WORKDIR}/secrets/ghapikey" ]; then
+    echo "Error: no Github API token found at ${WORKDIR}/secrets/ghapikey" > /dev/stderr
     exit 1
 fi
 
@@ -72,7 +65,7 @@ mkdir -p "${TMPDIR}"
 if [ ! -d "${WORKDIR}/webrender" ]; then
     git clone https://github.com/servo/webrender "${WORKDIR}/webrender"
     pushd "${WORKDIR}/webrender"
-    git remote add moz-gfx git@github.com:moz-gfx/webrender
+    git remote add moz-gfx https://github.com/moz-gfx/webrender
     popd
 else
     pushd "${WORKDIR}/webrender"
@@ -81,10 +74,12 @@ else
     popd
 fi
 
+HTTP_AUTH="moz-gfx:$(cat ${WORKDIR}/secrets/ghapikey)"
+
 pushd "${WORKDIR}/webrender"
 git fetch moz-gfx
 git checkout -B wrupdater moz-gfx/wrupdater || git checkout -B wrupdater master
-GIT_SSH_COMMAND="ssh -i ${WORKDIR}/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes" git push moz-gfx wrupdater:wrupdater
+git push "https://${HTTP_AUTH}@github.com/moz-gfx/webrender" wrupdater:wrupdater
 popd
 
 # Bring the mozilla-central repo to a known good up-to-date state
@@ -122,12 +117,10 @@ FIXES=$(git log master..wrupdater | grep "\[wrupdater\] From https://github.com/
 echo $FIXES
 set -e
 
-# TODO: do this push over https using the personal access token instead of SSH
-GIT_SSH_COMMAND="ssh -i ${WORKDIR}/moz-gfx-ssh/id_rsa -o IdentitiesOnly=yes" git push moz-gfx +wrupdater:wrupdater
+git push "https://${HTTP_AUTH}@github.com/moz-gfx/webrender" +wrupdater:wrupdater
 
 CURL_HEADER="Accept: application/vnd.github.v3+json"
-CURL_AUTH="moz-gfx:$(cat ${WORKDIR}/moz-gfx-ssh/ghapikey)"
-CURL=(curl -sSfL -H "${CURL_HEADER}" -u "${CURL_AUTH}")
+CURL=(curl -sSfL -H "${CURL_HEADER}" -u "${HTTP_AUTH}")
 
 # Check if there's an existing PR open
 "${CURL[@]}" "https://api.github.com/repos/servo/webrender/pulls?head=moz-gfx:wrupdater" | tee "${TMPDIR}/pr.get"
