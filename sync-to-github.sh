@@ -105,6 +105,7 @@ deactivate
 
 # Check to see if we have changes that need pushing
 pushd "${WORKDIR}/webrender"
+git reset --hard  # converter.py might leave files out of sync
 PATCHCOUNT=$(git log --oneline moz-gfx/wrupdater..wrupdater | wc -l)
 if [[ ${PATCHCOUNT} -eq 0 ]]; then
     echo "No new patches found, aborting..."
