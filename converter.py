@@ -331,7 +331,7 @@ if not hg_commits[hg_tip].touches_wr_code and len(hg_commits[hg_tip].parents) ==
 #     if rev == hg_tip:
 #         desc += " (tip)"
 #     eprint(desc)
-# 
+#
 git_tip = build_git_commits(hg_tip)
 if git_tip is None:
     eprint("No new changesets generated, exiting.")
