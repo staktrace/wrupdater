@@ -268,12 +268,13 @@ def build_git_commits(rev):
     git_parent_1 = build_git_commits(hg_commits[rev].parents[0])
     git_parent_2 = build_git_commits(hg_commits[rev].parents[1])
     if git_parent_1 is None or git_parent_2 is None or git_parent_1 == git_parent_2:
+        git_parent = git_parent_1 if git_parent_2 is None else git_parent_2
         if not hg_commits[rev].touches_wr_code:
-            return git_parent_1 if git_parent_2 is None else git_parent_2
+            return git_parent
 
         eprint("WARNING: Found merge rev %s whose parents have identical WR code, but modifies WR" % rev)
-        eprint("Building git equivalent for %s on top of %s" % (rev, git_parent_1))
-        commit_obj = try_commit(rev, git_parent_1)
+        eprint("Building git equivalent for %s on top of %s" % (rev, git_parent))
+        commit_obj = try_commit(rev, git_parent)
         hg_to_git_commit_map[rev] = GitCommit(rev, commit_obj)
         return commit_obj.oid
 
